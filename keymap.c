@@ -1,4 +1,23 @@
 #include QMK_KEYBOARD_H
+#include "eeconfig.h"
+
+#define OS_WINDOWS 0
+#define OS_MACOS 2
+
+static uint8_t saved_os_type = OS_WINDOWS;
+
+void save_os_preference(uint8_t os_type) {
+    saved_os_type = os_type;
+    eeconfig_update_user(os_type);
+}
+
+void load_os_preference(void) {
+    saved_os_type = eeconfig_read_user();
+    if (saved_os_type != OS_WINDOWS && saved_os_type != OS_MACOS) {
+        saved_os_type = OS_WINDOWS;
+    }
+    set_single_persistent_default_layer(saved_os_type);
+}
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   /* 0: Qwerty layer
@@ -28,7 +47,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   ),
 
   [1] = LAYOUT(
-    DF(0),    DF(2),    _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  K_MEDIA_PLAY_PAUSE,  KC_MEDIA_PREV_TRACK,  KC_MEDIA_NEXT_TRACK,  _______,  _______,
+    KC_F13,   KC_F14,   _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  K_MEDIA_PLAY_PAUSE,  KC_MEDIA_PREV_TRACK,  KC_MEDIA_NEXT_TRACK,  _______,  _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  KC_MUTE,  KC_VOLD,  KC_VOLU,  _______,  _______,  _______,
     _______,  RGB_TOG,  RGB_MOD,  RGB_HUI,  RGB_HUD,  RGB_SAI,  RGB_SAD,  RGB_VAI,  RGB_VAD,  _______,  _______,  _______,  _______,  _______,            _______,
     _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,  _______,                      _______,  _______,
@@ -46,4 +65,28 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_LCTL,  KC_LOPT,  KC_LCMD,                      KC_SPC,   KC_SPC,   KC_SPC,                       KC_RCMD,  KC_ROPT,  _______,  KC_LEFT,  KC_DOWN,  KC_RGHT
   ),
 };
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case KC_F13:
+            if (record->event.pressed) {
+                save_os_preference(OS_WINDOWS);
+                layer_clear();
+                layer_on(OS_WINDOWS);
+            }
+            return false;
+        case KC_F14:
+            if (record->event.pressed) {
+                save_os_preference(OS_MACOS);
+                layer_clear();
+                layer_on(OS_MACOS);
+            }
+            return false;
+    }
+    return true;
+}
+
+void keyboard_post_init_user(void) {
+    load_os_preference();
+}
 
